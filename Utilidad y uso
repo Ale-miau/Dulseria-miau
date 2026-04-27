@@ -1,0 +1,50 @@
+🧾 Uso del sistema
+Este programa funciona como un sistema digital para administrar una dulcería en la blockchain de Solana.
+¿Cómo se usa?
+Crear una dulcería
+El usuario registra su tienda con un nombre.
+Se convierte en el dueño del sistema.
+Agregar productos
+Se registran los dulces (nombre y cantidad).
+El sistema guarda si están disponibles o no.
+Administrar inventario
+Se pueden modificar las cantidades.
+El sistema actualiza automáticamente el estado del producto.
+Registrar ventas
+Cada venta reduce la cantidad disponible.
+Se suma al total de ventas.
+Consultar inventario
+Se puede ver la lista de productos con:
+nombre
+cantidad
+disponibilidad
+ventas totales
+Modo público (opcional)
+Si la dulcería es pública, otros usuarios pueden vender productos.
+Si es privada, solo el dueño puede hacerlo.
+Utilidad del proyecto
+Este sistema es útil porque:
+1. Control de inventario
+Permite llevar un registro exacto de:
+cuántos productos hay
+cuáles están disponibles
+cuáles se han agotado
+2. Registro de ventas
+Guarda automáticamente cuántos productos se venden
+Permite llevar un control básico del negocio
+3. Multiusuario
+Cada persona puede tener su propia dulcería
+No se mezclan los datos entre usuarios
+4. Seguridad
+Usa tecnología blockchain
+Los datos no pueden modificarse sin autorización
+Cada usuario controla su propia información
+5. Acceso descentralizado
+No depende de un servidor central
+Puede usarse desde cualquier lugar con acceso a la red
+6. Aplicación real
+Este tipo de sistema se puede usar para:
+pequeñas tiendas
+control de inventarios
+sistemas de ventas
+proyectos educativos de blockchain
