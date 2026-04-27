@@ -1,1 +1,209 @@
+use anchor_lang::prelude::*;
+
+declare_id!("DcJHrrHSgvFpsYxqb6g97uaQTd2kE31rPUeDZTeDsjVq");
+
+#[program]
+pub mod dulceria_app {
+use super::*;
+
+pub fn crear_dulceria(
+    ctx: Context<NuevaDulceria>,
+    nombre: String,
+    es_publica: bool,
+) -> Result<()> {
+    let dulceria = &mut ctx.accounts.dulceria;
+
+    dulceria.owner = ctx.accounts.owner.key();
+    dulceria.nombre = nombre;
+    dulceria.productos = Vec::new();
+    dulceria.ventas_totales = 0;
+    dulceria.es_publica = es_publica;
+
+    Ok(())
+}
+
+pub fn agregar_producto(
+    ctx: Context<ModificarDulceria>,
+    nombre: String,
+    cantidad: u16,
+) -> Result<()> {
+    let dulceria = &mut ctx.accounts.dulceria;
+
+    require!(
+        dulceria.owner == ctx.accounts.usuario.key(),
+        Errores::NoEresElOwner
+    );
+
+    dulceria.productos.push(Producto {
+        nombre,
+        cantidad,
+        disponible: cantidad > 0,
+    });
+
+    Ok(())
+}
+
+pub fn actualizar_stock(
+    ctx: Context<ModificarDulceria>,
+    nombre: String,
+    nueva_cantidad: u16,
+) -> Result<()> {
+    let dulceria = &mut ctx.accounts.dulceria;
+
+    require!(
+        dulceria.owner == ctx.accounts.usuario.key(),
+        Errores::NoEresElOwner
+    );
+
+    for producto in dulceria.productos.iter_mut() {
+        if producto.nombre == nombre {
+            producto.cantidad = nueva_cantidad;
+            producto.disponible = nueva_cantidad > 0;
+            return Ok(());
+        }
+    }
+
+    Err(Errores::ProductoNoExiste.into())
+}
+
+pub fn vender_producto(
+    ctx: Context<ModificarDulceria>,
+    nombre: String,
+    cantidad: u16,
+) -> Result<()> {
+    let dulceria = &mut ctx.accounts.dulceria;
+
+    require!(
+        dulceria.es_publica || dulceria.owner == ctx.accounts.usuario.key(),
+        Errores::NoAutorizado
+    );
+
+    let mut vendido = 0;
+
+    for producto in dulceria.productos.iter_mut() {
+        if producto.nombre == nombre {
+            require!(
+                producto.cantidad >= cantidad,
+                Errores::StockInsuficiente
+            );
+
+            producto.cantidad -= cantidad;
+            producto.disponible = producto.cantidad > 0;
+
+            vendido = cantidad;
+
+            msg!(
+                "Venta: {} | Restante: {}",
+                producto.nombre,
+                producto.cantidad
+            );
+
+            break;
+        }
+    }
+
+    require!(vendido > 0, Errores::ProductoNoExiste);
+
+    dulceria.ventas_totales += vendido as u32;
+
+    Ok(())
+}
+
+pub fn ver_inventario(ctx: Context<LeerDulceria>) -> Result<()> {
+    let dulceria = &ctx.accounts.dulceria;
+
+    msg!("Dulceria: {}", dulceria.nombre);
+
+    for p in dulceria.productos.iter() {
+        msg!(
+            "Producto: {} | Cantidad: {} | Disponible: {}",
+            p.nombre,
+            p.cantidad,
+            p.disponible
+        );
+    }
+
+    msg!("Ventas totales: {}", dulceria.ventas_totales);
+
+    Ok(())
+}
+pub fn eliminar_producto(
+    ctx: Context<ModificarDulceria>,
+    nombre: String,
+) -> Result<()> {
+    let dulceria = &mut ctx.accounts.dulceria;
+
+    require!(
+        dulceria.owner == ctx.accounts.usuario.key(),
+        Errores::NoEresElOwner
+    );
+
+    let productos = &mut dulceria.productos;
+
+    for i in 0..productos.len() {
+        if productos[i].nombre == nombre {
+            productos.remove(i);
+            msg!("Producto eliminado");
+            return Ok(());
+        }
+    }
+
+    Err(Errores::ProductoNoExiste.into())
+}
+}
+#[error_code]
+pub enum Errores {
+#[msg("No eres el dueño")]
+NoEresElOwner,
+#[msg("Producto no existe")]
+ProductoNoExiste,
+#[msg("Stock insuficiente")]
+StockInsuficiente,
+#[msg("No autorizado")]
+NoAutorizado,
+}
+#[account]
+#[derive(InitSpace)]
+pub struct Dulceria {
+pub owner: Pubkey,
+#[max_len(60)]
+pub nombre: String,
+#[max_len(30)]
+pub productos: Vec<Producto>,
+pub ventas_totales: u32,
+pub es_publica: bool,
+}
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, InitSpace, Debug)]
+pub struct Producto {
+#[max_len(60)]
+pub nombre: String,
+pub cantidad: u16,
+pub disponible: bool,
+}
+#[derive(Accounts)]
+pub struct NuevaDulceria<'info> {
+#[account(mut)]
+pub owner: Signer<'info>,
+#[account(
+    init,
+    payer = owner,
+    space = Dulceria::INIT_SPACE + 8,
+    seeds = [b"dulceria", owner.key().as_ref()],
+    bump
+)]
+pub dulceria: Account<'info, Dulceria>,
+
+pub system_program: Program<'info, System>,
+}
+#[derive(Accounts)]
+pub struct ModificarDulceria<'info> {
+#[account(mut)]
+pub usuario: Signer<'info>,
+#[account(mut)]
+pub dulceria: Account<'info, Dulceria>,
+}
+#[derive(Accounts)]
+pub struct LeerDulceria<'info> {
+pub dulceria: Account<'info, Dulceria>,
+}
 
